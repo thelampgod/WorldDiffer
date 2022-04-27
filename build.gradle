@@ -1,0 +1,63 @@
+plugins {
+    id 'java'
+}
+
+ext {
+    //dependency things
+    gsonVersion = "2.8.5"
+    junitVersion = "4.12"
+    lombokVersion = "1.18.20"
+    porklibVersion = "0.5.4-SNAPSHOT"
+}
+
+group 'com.github.thelampgod'
+version '1.0-SNAPSHOT'
+
+repositories {
+    maven {
+        name = "DaPorkchop_"
+        url = "https://maven.daporkchop.net/"
+    }
+    mavenCentral()
+}
+
+configurations {
+    shade
+    compile.extendsFrom shade
+}
+
+dependencies {
+    shade "com.google.code.gson:gson:$gsonVersion"
+
+    shade "net.daporkchop.lib:http:$porklibVersion"
+    shade "net.daporkchop.lib:logging:$porklibVersion"
+    shade "net.daporkchop.lib:minecraft-worldscanner:$porklibVersion"
+    shade "net.daporkchop.lib:reflection:$porklibVersion"
+
+    testCompile "junit:junit:$junitVersion"
+
+    compileOnly "org.projectlombok:lombok:$lombokVersion"
+    testCompileOnly "org.projectlombok:lombok:$lombokVersion"
+    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
+    testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
+}
+
+
+jar {
+    from {
+        configurations.shade.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }.unique()
+    } {
+        exclude "META-INF/**"
+        exclude sourceSets.main.output.asFileTree.collect {
+            return it.getPath().split("java/main").last()
+        }
+    }
+
+    manifest {
+        attributes "Implementation-Title": "thelampgod",
+                "Implementation-Version": "1.0-SNAPSHOT",
+                "Main-Class": "com.github.thelampgod.Main"
+    }
+}
