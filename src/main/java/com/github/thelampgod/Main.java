@@ -48,9 +48,13 @@ public class Main {
                             for (int x = 0; x < 32; ++x) {
                                 for (int z = 0; z < 32; ++z) {
                                     ChunkPos cPos = new ChunkPos((rPos.getXPos() << 5) + x, (rPos.getZPos() << 5) + z);
-                                    System.out.println(cPos);
+                                    System.out.println(rPos + " " + cPos);
                                     Chunk c1 = r1.get(cPos);
                                     Chunk c2 = r2.get(cPos);
+
+                                    if (c1 == null || c2 == null) {
+                                        continue;
+                                    }
 
                                     NbtList<NbtCompound> sList1 = c1.getLevel().getCompoundList("Sections");
                                     NbtList<NbtCompound> sList2 = c2.getLevel().getCompoundList("Sections");
