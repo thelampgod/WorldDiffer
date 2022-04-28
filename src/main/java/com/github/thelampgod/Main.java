@@ -1,5 +1,8 @@
 package com.github.thelampgod;
 
+import br.com.gamemods.nbtmanipulator.NbtByteArray;
+import br.com.gamemods.nbtmanipulator.NbtCompound;
+import br.com.gamemods.nbtmanipulator.NbtList;
 import br.com.gamemods.regionmanipulator.*;
 
 import java.io.File;
@@ -7,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.stream.Stream;
 
@@ -45,10 +49,43 @@ public class Main {
                                     ChunkPos cPos = new ChunkPos(rPos.getXPos() >> 5 + x, rPos.getZPos() >> 5 + z);
                                     Chunk c1 = r1.get(cPos);
                                     Chunk c2 = r2.get(cPos);
+
+                                    NbtList<NbtCompound> sList1 = c1.getLevel().getCompoundList("Sections");
+                                    NbtList<NbtCompound> sList2 = c2.getLevel().getCompoundList("Sections");
+                                    byte[] emptyArray = new byte[4096];
+                                    Arrays.fill(emptyArray, (byte)0); // fill array with tnt
+
+
+                                    for (int i = 0; i < sList1.getSize(); ++i) {
+                                        NbtCompound s1 = sList1.get(i);
+                                        if (sList2.get(i) == null) {
+                                            s1.set("Blocks", new NbtByteArray(emptyArray));
+                                            continue;
+                                        }
+                                        NbtCompound s2 = sList2.get(i);
+
+                                        byte[] arr1 = s1.getByteArray("Blocks");
+                                        byte[] arr2 = s2.getByteArray("Blocks");
+
+                                        byte[] result = new byte[4096];
+
+                                        for (int j = 0; j < arr1.length; ++j) {
+                                            if (arr1[j] == arr2[j]) {
+                                                result[j] = (byte) 0;
+                                            } else {
+                                                result[j] = arr1[j]; //TODO: also other way round (result[j] = arr2[j]
+                                            }
+                                        }
+
+                                        s1.set("Blocks", new NbtByteArray(result));
+                                    }
+
+                                    r1.put(cPos, c1);
                                 }
                             }
 
 
+                            RegionIO.writeRegion(new File(String.format("./out/r.%d.%d.mca", rPos.getXPos(), rPos.getZPos())), r1);
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
