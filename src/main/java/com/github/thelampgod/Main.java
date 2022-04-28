@@ -24,21 +24,22 @@ public class Main {
         HashMap<RegionPos, File> world2 = new HashMap<>();
 
         try (Stream<Path> fileStream1 = Files.list(Paths.get(args[1]))) {
-            fileStream1.parallel()
+            fileStream1
                     .filter(Files::isRegularFile)
-                    .filter(file -> file.getFileName().endsWith(".mca"))
+                    .filter(file -> file.getFileName().toString().endsWith(".mca"))
                     .map(Path::toFile)
                     .forEach(file -> world2.put(new RegionPos(file.getName()), file));
         }
 
         try (Stream<Path> fileStream = Files.list(Paths.get(args[0]))) {
-            fileStream.parallel()
+            fileStream
                     .filter(Files::isRegularFile)
-                    .filter(file -> file.getFileName().endsWith(".mca"))
+                    .filter(file -> file.getFileName().toString().endsWith(".mca"))
                     .map(Path::toFile)
-                    .filter(world2::containsValue)
+                    .filter(file -> world2.containsKey(new RegionPos(file.getName())))
                     .forEach(file -> {
                         try {
+                            System.out.println("reading regions");
                             Region r1 = RegionIO.readRegion(file);
                             Region r2 = RegionIO.readRegion(world2.get(r1.getPosition()));
 
@@ -46,14 +47,15 @@ public class Main {
 
                             for (int x = 0; x < 32; ++x) {
                                 for (int z = 0; z < 32; ++z) {
-                                    ChunkPos cPos = new ChunkPos(rPos.getXPos() >> 5 + x, rPos.getZPos() >> 5 + z);
+                                    ChunkPos cPos = new ChunkPos((rPos.getXPos() << 5) + x, (rPos.getZPos() << 5) + z);
+                                    System.out.println(cPos);
                                     Chunk c1 = r1.get(cPos);
                                     Chunk c2 = r2.get(cPos);
 
                                     NbtList<NbtCompound> sList1 = c1.getLevel().getCompoundList("Sections");
                                     NbtList<NbtCompound> sList2 = c2.getLevel().getCompoundList("Sections");
                                     byte[] emptyArray = new byte[4096];
-                                    Arrays.fill(emptyArray, (byte)0); // fill array with tnt
+                                    Arrays.fill(emptyArray, (byte)0); // fill array with air
 
 
                                     for (int i = 0; i < sList1.getSize(); ++i) {
@@ -80,6 +82,7 @@ public class Main {
                                         s1.set("Blocks", new NbtByteArray(result));
                                     }
 
+                                    System.out.println("saving chunk " + cPos + " in region");
                                     r1.put(cPos, c1);
                                 }
                             }
