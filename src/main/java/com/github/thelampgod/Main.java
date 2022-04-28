@@ -1,37 +1,14 @@
 package com.github.thelampgod;
 
-import com.github.thelampgod.util.ProgressMonitor;
-import io.netty.buffer.ByteBuf;
-import io.netty.util.concurrent.FastThreadLocalThread;
-import lombok.NonNull;
-import net.daporkchop.lib.common.function.throwing.EConsumer;
-import net.daporkchop.lib.common.ref.Ref;
-import net.daporkchop.lib.common.ref.ThreadRef;
-import net.daporkchop.lib.math.vector.i.Vec2i;
-import net.daporkchop.lib.minecraft.region.util.ChunkProcessor;
-import net.daporkchop.lib.minecraft.world.Chunk;
-import net.daporkchop.lib.minecraft.world.MinecraftSave;
-import net.daporkchop.lib.minecraft.world.World;
-import net.daporkchop.lib.minecraft.world.format.anvil.AnvilSaveFormat;
-import net.daporkchop.lib.minecraft.world.format.anvil.AnvilWorldManager;
-import net.daporkchop.lib.minecraft.world.format.anvil.region.RegionFile;
-import net.daporkchop.lib.minecraft.world.format.anvil.region.RegionOpenOptions;
-import net.daporkchop.lib.minecraft.world.impl.MinecraftSaveConfig;
-import net.daporkchop.lib.minecraft.world.impl.SaveBuilder;
+import br.com.gamemods.regionmanipulator.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicLong;
+import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.stream.Stream;
-
-import static net.daporkchop.lib.common.util.PorkUtil.CPU_COUNT;
 
 public class Main {
     public static void main(String[] args) throws IOException {
@@ -40,83 +17,70 @@ public class Main {
             System.exit(1);
         }
 
-        try (MinecraftSave save = new SaveBuilder()
-                .setInitFunctions(new MinecraftSaveConfig()
-                        .openOptions(new RegionOpenOptions().access(RegionFile.Access.READ_ONLY).mode(RegionFile.Mode.MMAP_FULL)))
-                .setFormat(new AnvilSaveFormat(new File(args[0]))).build()) {
+        HashMap<RegionPos, File> world2 = new HashMap<>();
 
-
-            int dim = 0;
-            World world = save.world(dim);
-
-
-            List<ChunkProcessor> processors = new ArrayList<>();
-
-            {
-                ProgressMonitor monitor = new ProgressMonitor(1L);
-                processors.add((current, estimatedTotal, column) -> monitor.set(current, estimatedTotal));
-            }
-
-            {
-                Ref<char[]> refCache = ThreadRef.late(() -> new char[32768]);
-                Ref<char[]> dstCache = ThreadRef.late(() -> new char[32768]);
-                processors.add((current, estimatedTotal, chunk) -> {
-                    char[] ref = refCache.get();
-                    char[] gen = dstCache.get();
-
-                    for (int i = 0, x = 0; x < 16; x++) {
-                        for (int z = 0; z < 16; z++) {
-                            for (int y = 0; y < 128; y++, i++) {
-                                ref[i] = (char) ((chunk.getBlockId(x, y, z) << 4) /*| chunk.getBlockMeta(x, y, z)*/);
-                            }
-                        }
-                    }
-                });
-
-
-                scanWorld(world, processors);
-            }
+        try (Stream<Path> fileStream1 = Files.list(Paths.get(args[1]))) {
+            fileStream1.parallel()
+                    .filter(Files::isRegularFile)
+                    .filter(file -> file.getFileName().endsWith(".mca"))
+                    .map(Path::toFile)
+                    .forEach(file -> world2.put(new RegionPos(file.getName()), file));
         }
 
-    }
+        try (Stream<Path> fileStream = Files.list(Paths.get(args[0]))) {
+            fileStream.parallel()
+                    .filter(Files::isRegularFile)
+                    .filter(file -> file.getFileName().endsWith(".mca"))
+                    .map(Path::toFile)
+                    .filter(world2::containsValue)
+                    .forEach(file -> {
+                        try {
+                            Region r1 = RegionIO.readRegion(file);
+                            Region r2 = RegionIO.readRegion(world2.get(r1.getPosition()));
 
-    private static void scanWorld(World world, List<ChunkProcessor> processors) {
-        Queue<Vec2i> regions = new ConcurrentLinkedQueue<>(((AnvilWorldManager) world.manager()).getRegions());
+                            RegionPos rPos = r1.getPosition();
 
-        AtomicLong curr = new AtomicLong(0L);
-        AtomicLong estimatedTotal = new AtomicLong(regions.size() * (32L * 32L));
-
-        Runnable action = () -> {
-            for (Vec2i pos; (pos = regions.poll()) != null; ) {
-                int xx = pos.getX() << 5;
-                int zz = pos.getY() << 5;
-                for (int x = 0; x < 32; x++) {
-                    for (int z = 0; z < 32; z++) {
-                        Chunk chunk = world.column(xx + x, zz + z);
-                        if (chunk.load(false)) {
-                            long current = curr.getAndIncrement();
-                            for (ChunkProcessor processor : processors) {
-                                processor.handle(current, estimatedTotal.get(), chunk);
+                            for (int x = 0; x < 32; ++x) {
+                                for (int z = 0; z < 32; ++z) {
+                                    ChunkPos cPos = new ChunkPos(rPos.getXPos() >> 5 + x, rPos.getZPos() >> 5 + z);
+                                    Chunk c1 = r1.get(cPos);
+                                    Chunk c2 = r2.get(cPos);
+                                }
                             }
-                            chunk.unload();
-                        } else {
-                            estimatedTotal.decrementAndGet();
+
+
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
                         }
-                    }
-                }
-            }
-        };
 
-
-        //create and start workers
-        Thread[] threads = new Thread[Integer.getInteger("threads", CPU_COUNT)];
-        for (int i = 0; i < threads.length; i++) {
-            threads[i] = new FastThreadLocalThread(action, "WorldDiffer worker #" + i);
-            threads[i].start();
+                    });
         }
+//
+//
+//        Region region = RegionIO.readRegion(new File(args[0]));
+//        ChunkPos pos = new ChunkPos(-6304, -4858);
+//        Chunk chunk = region.get(pos);
+//
+//        NbtList<NbtCompound> sections = chunk.getLevel().getCompoundList("Sections");
+//
+//        byte[] ar = new byte[4096];
+//        Arrays.fill(ar, (byte)46); // fill array with tnt
+////        for (int i = 0; i < 8; i++) {
+////            ar[i] = (byte) 46;
+////        }
+//
+//        for (int i = 0; i < sections.getSize(); ++i) {
+//            NbtCompound section = sections.get(i);
+//            section.set("Blocks", new NbtByteArray(ar)); //set all existing sections with our tnt array (empty sections don't exist)
+////            byte[] blox = section.getByteArray("Blocks");
+////            for (byte b : blox) {
+////                System.out.println("sectionY= " + i + " byte=" + b);
+////            }
+//        }
+//
+//        region.put(pos, chunk);
+//
+//        RegionIO.writeRegion(new File(String.format("./out/r.%d.%d.mca", region.getPosition().getXPos(), region.getPosition().getZPos())), region);
 
-        //wait for all workers to exit
-        Stream.of(threads).forEach((EConsumer<Thread>) Thread::join);
     }
-
 }
