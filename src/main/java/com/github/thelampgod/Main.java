@@ -15,6 +15,8 @@ import java.util.HashMap;
 import java.util.stream.Stream;
 
 public class Main {
+    //TODO: meta sometimes breaks
+
     public static void main(String[] args) throws IOException {
         if (args.length < 3) {
             System.err.println("usage: <world1> <world2> <from/into> <output>");
@@ -91,6 +93,7 @@ public class Main {
                                     }
 
                                     //copy over new sections (if mode is "from")
+                                    //TODO: this seems to be somewhat broken, should check for the "Y" value instead of relying on the iteration order being correct
                                     if (sList2.getSize() > sList1.getSize() && !args[2].equalsIgnoreCase("from")) {
                                         for (int i = sList1.getSize() - 1; i < sList2.getSize(); ++i) {
                                             sList1.add(sList2.get(i));
