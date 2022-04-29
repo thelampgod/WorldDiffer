@@ -3,7 +3,7 @@ plugins {
 }
 
 group 'com.github.thelampgod'
-version '1.0-SNAPSHOT'
+version '1.1'
 
 repositories {
     mavenCentral()
@@ -33,7 +33,7 @@ jar {
 
     manifest {
         attributes "Implementation-Title": "thelampgod",
-                "Implementation-Version": "1.0-SNAPSHOT",
+                "Implementation-Version": "1.1",
                 "Main-Class": "com.github.thelampgod.Main"
     }
 }
