@@ -21,6 +21,7 @@ public class Main {
             System.exit(1);
         }
 
+        //TODO: dont use hashmap to not run out of memory
         HashMap<RegionPos, File> world2 = new HashMap<>();
 
         try (Stream<Path> fileStream1 = Files.list(Paths.get(args[1]))) {
@@ -61,10 +62,10 @@ public class Main {
                                     byte[] emptyArray = new byte[4096];
                                     Arrays.fill(emptyArray, (byte)0); // fill array with air
 
-
                                     for (int i = 0; i < sList1.getSize(); ++i) {
                                         NbtCompound s1 = sList1.get(i);
                                         if (sList2.get(i) == null) {
+                                            //TODO: section should be removed not just emptied
                                             s1.set("Blocks", new NbtByteArray(emptyArray));
                                             continue;
                                         }
