@@ -10,12 +10,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class Main {
-    //TODO: meta sometimes breaks
 
     public static void main(String[] args) throws IOException {
         if (args.length < 3) {
@@ -55,6 +53,7 @@ public class Main {
                                     Chunk c1 = r1.get(cPos);
                                     Chunk c2 = r2.get(cPos);
 
+                                    //if chunk doesnt exist in region
                                     if (c1 == null || c2 == null) {
                                         continue;
                                     }
@@ -62,43 +61,78 @@ public class Main {
                                     NbtList<NbtCompound> sList1 = c1.getLevel().getCompoundList("Sections");
                                     NbtList<NbtCompound> sList2 = c2.getLevel().getCompoundList("Sections");
 
-                                    byte[] emptyArray = new byte[4096];
-                                    Arrays.fill(emptyArray, (byte)0); // fill array with air
-
+                                    Set<Byte> sectionsToRemove = new HashSet<>();
                                     for (int i = 0; i < sList1.getSize(); ++i) {
                                         NbtCompound s1 = sList1.get(i);
-                                        if (sList2.get(i) == null) {
-                                            //TODO: section should be removed not just emptied
-                                            s1.set("Blocks", new NbtByteArray(emptyArray));
+                                        byte Y = s1.getByte("Y");
+
+                                        //if section doesnt exist in other world
+                                        if (sList2.get(Y) == null) {
+                                            sectionsToRemove.add(Y);
                                             continue;
                                         }
-                                        NbtCompound s2 = sList2.get(i);
+
+                                        NbtCompound s2 = sList2.get(Y);
 
                                         byte[] arr1 = s1.getByteArray("Blocks");
                                         byte[] arr2 = s2.getByteArray("Blocks");
 
-                                        byte[] result = new byte[4096];
 
 
                                         for (int j = 0; j < arr1.length; ++j) {
                                             //TODO: also other way round (only save blocks where nothing changed)
                                             if (arr1[j] == arr2[j]) {
-                                                result[j] = (byte) 0;
+                                                arr1[j] = (byte) 0;
                                             } else {
-                                                result[j] = (args[2].equalsIgnoreCase("from") ? arr1[j] : arr2[j]);
+                                                arr1[j] = (args[2].equalsIgnoreCase("from") ? arr1[j] : arr2[j]);
                                             }
                                         }
 
-                                        s1.set("Blocks", new NbtByteArray(result));
+                                        s1.set("Blocks", new NbtByteArray(arr1));
+                                        arr1 = null;
+
+                                        List<byte[]> dataArrays1 = Arrays.asList(
+                                                s1.getByteArray("BlockLight"),
+                                                s1.getByteArray("Data"),
+                                                s1.getByteArray("SkyLight")
+                                        );
+
+                                        List<byte[]> dataArrays2 = Arrays.asList(
+                                                s2.getByteArray("BlockLight"),
+                                                s2.getByteArray("Data"),
+                                                s2.getByteArray("SkyLight")
+                                        );
+
+                                        for (int j = 0; j < 2048; ++j) {
+                                            for (int l = 0;  l < 3; ++l) {
+                                                byte[] a1 = dataArrays1.get(l);
+                                                byte[] a2 = dataArrays2.get(l);
+                                                if (a1[j] == a2[j]) {
+                                                    a1[j] = (byte) 0;
+                                                } else {
+                                                    a1[j] = (args[2].equalsIgnoreCase("from") ? a1[j] : a2[j]);
+                                                }
+
+                                                dataArrays1.set(l, a1);
+                                            }
+                                        }
+
+                                        s1.set("BlockLight", new NbtByteArray(dataArrays1.get(0)));
+                                        s1.set("Data", new NbtByteArray(dataArrays1.get(0)));
+                                        s1.set("SkyLight", new NbtByteArray(dataArrays1.get(0)));
+                                    }
+
+                                    for (byte b : sectionsToRemove) {
+                                        sList1.removeIf(nbt -> nbt.getByte("Y") == b);
                                     }
 
                                     //copy over new sections (if mode is "from")
                                     //TODO: this seems to be somewhat broken, should check for the "Y" value instead of relying on the iteration order being correct
-                                    if (sList2.getSize() > sList1.getSize() && !args[2].equalsIgnoreCase("from")) {
-                                        for (int i = sList1.getSize() - 1; i < sList2.getSize(); ++i) {
-                                            sList1.add(sList2.get(i));
-                                        }
-                                    }
+//                                    if (sList2.getSize() > sList1.getSize() && !args[2].equalsIgnoreCase("from")) {
+//                                        for (int i = sList1.getSize() - 1; i < sList2.getSize(); ++i) {
+//                                            sList1.add(sList2.get(i));
+//                                        }
+//                                    }
 
                                     System.out.println("saving chunk " + cPos + " in region");
                                     r1.put(cPos, c1);
