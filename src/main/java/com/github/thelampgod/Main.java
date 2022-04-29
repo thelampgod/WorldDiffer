@@ -16,8 +16,8 @@ import java.util.stream.Stream;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-        if (args.length != 2) {
-            System.err.println("usage: <world1> <world2>");
+        if (args.length < 3) {
+            System.err.println("usage: <world1> <world2> <from/into> <output>");
             System.exit(1);
         }
 
@@ -75,11 +75,13 @@ public class Main {
 
                                         byte[] result = new byte[4096];
 
+
                                         for (int j = 0; j < arr1.length; ++j) {
+                                            //TODO: also other way round (only save blocks where nothing changed)
                                             if (arr1[j] == arr2[j]) {
                                                 result[j] = (byte) 0;
                                             } else {
-                                                result[j] = arr1[j]; //TODO: also other way round (result[j] = arr2[j]
+                                                result[j] = (args[2].equalsIgnoreCase("from") ? arr1[j] : arr2[j]);
                                             }
                                         }
 
@@ -91,8 +93,13 @@ public class Main {
                                 }
                             }
 
+                            String output = "./out/";
 
-                            RegionIO.writeRegion(new File(String.format("./out/r.%d.%d.mca", rPos.getXPos(), rPos.getZPos())), r1);
+                            if (args.length == 4) {
+                                output = args[3];
+                            }
+
+                            RegionIO.writeRegion(new File(String.format(output + "/r.%d.%d.mca", rPos.getXPos(), rPos.getZPos())), r1);
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
