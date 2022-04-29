@@ -127,12 +127,14 @@ public class Main {
                                     }
 
                                     //copy over new sections (if mode is "from")
-                                    //TODO: this seems to be somewhat broken, should check for the "Y" value instead of relying on the iteration order being correct
-//                                    if (sList2.getSize() > sList1.getSize() && !args[2].equalsIgnoreCase("from")) {
-//                                        for (int i = sList1.getSize() - 1; i < sList2.getSize(); ++i) {
-//                                            sList1.add(sList2.get(i));
-//                                        }
-//                                    }
+                                    if (sList2.getSize() > sList1.getSize() && !args[2].equalsIgnoreCase("from")) {
+                                        for (int i = 0; i < sList2.getSize(); ++i) {
+                                            NbtCompound compound = sList2.get(i);
+                                            if (sList1.get(compound.getByte("Y")) == null) {
+                                                sList1.add(compound);
+                                            }
+                                        }
+                                    }
 
                                     System.out.println("saving chunk " + cPos + " in region");
                                     r1.put(cPos, c1);
