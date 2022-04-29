@@ -59,6 +59,7 @@ public class Main {
 
                                     NbtList<NbtCompound> sList1 = c1.getLevel().getCompoundList("Sections");
                                     NbtList<NbtCompound> sList2 = c2.getLevel().getCompoundList("Sections");
+
                                     byte[] emptyArray = new byte[4096];
                                     Arrays.fill(emptyArray, (byte)0); // fill array with air
 
@@ -87,6 +88,13 @@ public class Main {
                                         }
 
                                         s1.set("Blocks", new NbtByteArray(result));
+                                    }
+
+                                    //copy over new sections (if mode is "from")
+                                    if (sList2.getSize() > sList1.getSize() && !args[2].equalsIgnoreCase("from")) {
+                                        for (int i = sList1.getSize() - 1; i < sList2.getSize(); ++i) {
+                                            sList1.add(sList2.get(i));
+                                        }
                                     }
 
                                     System.out.println("saving chunk " + cPos + " in region");
