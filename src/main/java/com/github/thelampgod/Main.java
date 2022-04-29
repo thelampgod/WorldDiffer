@@ -115,32 +115,5 @@ public class Main {
 
                     });
         }
-//
-//
-//        Region region = RegionIO.readRegion(new File(args[0]));
-//        ChunkPos pos = new ChunkPos(-6304, -4858);
-//        Chunk chunk = region.get(pos);
-//
-//        NbtList<NbtCompound> sections = chunk.getLevel().getCompoundList("Sections");
-//
-//        byte[] ar = new byte[4096];
-//        Arrays.fill(ar, (byte)46); // fill array with tnt
-////        for (int i = 0; i < 8; i++) {
-////            ar[i] = (byte) 46;
-////        }
-//
-//        for (int i = 0; i < sections.getSize(); ++i) {
-//            NbtCompound section = sections.get(i);
-//            section.set("Blocks", new NbtByteArray(ar)); //set all existing sections with our tnt array (empty sections don't exist)
-////            byte[] blox = section.getByteArray("Blocks");
-////            for (byte b : blox) {
-////                System.out.println("sectionY= " + i + " byte=" + b);
-////            }
-//        }
-//
-//        region.put(pos, chunk);
-//
-//        RegionIO.writeRegion(new File(String.format("./out/r.%d.%d.mca", region.getPosition().getXPos(), region.getPosition().getZPos())), region);
-
     }
 }
