@@ -66,13 +66,15 @@ public class Main {
                                         NbtCompound s1 = sList1.get(i);
                                         byte Y = s1.getByte("Y");
 
+                                        Optional<NbtCompound> s2Optional = sList2.stream().filter(nbt -> nbt.getByte("Y") == Y).findAny();
                                         //if section doesnt exist in other world
-                                        if (sList2.get(Y) == null) {
+                                        if (!s2Optional.isPresent()) {
                                             sectionsToRemove.add(Y);
                                             continue;
                                         }
 
-                                        NbtCompound s2 = sList2.get(Y);
+                                        NbtCompound s2 = s2Optional.get();
+
 
                                         byte[] arr1 = s1.getByteArray("Blocks");
                                         byte[] arr2 = s2.getByteArray("Blocks");
@@ -130,7 +132,8 @@ public class Main {
                                     if (sList2.getSize() > sList1.getSize() && !args[2].equalsIgnoreCase("from")) {
                                         for (int i = 0; i < sList2.getSize(); ++i) {
                                             NbtCompound compound = sList2.get(i);
-                                            if (sList1.get(compound.getByte("Y")) == null) {
+                                            Optional<NbtCompound> s1 = sList1.stream().filter(nbt -> nbt.getByte("Y") == compound.getByte("Y")).findAny();
+                                            if (!s1.isPresent()) {
                                                 sList1.add(compound);
                                             }
                                         }
