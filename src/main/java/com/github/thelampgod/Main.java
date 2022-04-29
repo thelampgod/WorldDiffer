@@ -80,7 +80,6 @@ public class Main {
                                         byte[] arr2 = s2.getByteArray("Blocks");
 
 
-
                                         for (int j = 0; j < arr1.length; ++j) {
                                             //TODO: also other way round (only save blocks where nothing changed)
                                             if (arr1[j] == arr2[j]) {
@@ -104,24 +103,23 @@ public class Main {
                                                 s2.getByteArray("Data"),
                                                 s2.getByteArray("SkyLight")
                                         );
+                                        for (int l = 0; l < 3; ++l) {
+                                            byte[] a1 = dataArrays1.get(l);
+                                            byte[] a2 = dataArrays2.get(l);
+                                            for (int j = 0; j < 2048; ++j) {
 
-                                        for (int j = 0; j < 2048; ++j) {
-                                            for (int l = 0;  l < 3; ++l) {
-                                                byte[] a1 = dataArrays1.get(l);
-                                                byte[] a2 = dataArrays2.get(l);
                                                 if (a1[j] == a2[j]) {
                                                     a1[j] = (byte) 0;
                                                 } else {
                                                     a1[j] = (args[2].equalsIgnoreCase("from") ? a1[j] : a2[j]);
                                                 }
-
-                                                dataArrays1.set(l, a1);
                                             }
+                                            dataArrays1.set(l, a1);
                                         }
 
                                         s1.set("BlockLight", new NbtByteArray(dataArrays1.get(0)));
-                                        s1.set("Data", new NbtByteArray(dataArrays1.get(0)));
-                                        s1.set("SkyLight", new NbtByteArray(dataArrays1.get(0)));
+                                        s1.set("Data", new NbtByteArray(dataArrays1.get(1)));
+                                        s1.set("SkyLight", new NbtByteArray(dataArrays1.get(2)));
                                     }
 
                                     for (byte b : sectionsToRemove) {
