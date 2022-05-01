@@ -6,6 +6,7 @@ import br.com.gamemods.nbtmanipulator.NbtList;
 import br.com.gamemods.regionmanipulator.*;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,28 +22,22 @@ public class Main {
             System.exit(1);
         }
 
-        //TODO: dont use hashmap to not run out of memory
-        HashMap<RegionPos, File> world2 = new HashMap<>();
-
-        try (Stream<Path> fileStream1 = Files.list(Paths.get(args[1]))) {
-            fileStream1
-                    .filter(Files::isRegularFile)
-                    .filter(file -> file.getFileName().toString().endsWith(".mca"))
-                    .map(Path::toFile)
-                    .forEach(file -> world2.put(new RegionPos(file.getName()), file));
-        }
-
         try (Stream<Path> fileStream = Files.list(Paths.get(args[0]))) {
-            fileStream
-                    .filter(Files::isRegularFile)
+            fileStream.parallel()
                     .filter(file -> file.getFileName().toString().endsWith(".mca"))
                     .map(Path::toFile)
-                    .filter(file -> world2.containsKey(new RegionPos(file.getName())))
                     .forEach(file -> {
                         try {
                             System.out.println("reading regions");
                             Region r1 = RegionIO.readRegion(file);
-                            Region r2 = RegionIO.readRegion(world2.get(r1.getPosition()));
+                            Region r2;
+                            try {
+                                r2 = RegionIO.readRegion(new File(String.format("%s/%s", args[1], file.getName())));
+
+                            } catch (FileNotFoundException e) {
+                                System.out.println("region no exist");
+                                return;
+                            }
 
                             RegionPos rPos = r1.getPosition();
 
@@ -150,10 +145,10 @@ public class Main {
 
                             RegionIO.writeRegion(new File(String.format(output + "/r.%d.%d.mca", rPos.getXPos(), rPos.getZPos())), r1);
                         } catch (Exception e) {
-                            throw new RuntimeException(e);
+                            e.printStackTrace();
                         }
-
                     });
+
         }
     }
 }
