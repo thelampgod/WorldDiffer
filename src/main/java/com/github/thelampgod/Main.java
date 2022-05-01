@@ -22,6 +22,8 @@ public class Main {
             System.exit(1);
         }
 
+        boolean from = args[2].equalsIgnoreCase("from");
+
         try (Stream<Path> fileStream = Files.list(Paths.get(args[0]))) {
             fileStream.parallel()
                     .filter(file -> file.getFileName().toString().endsWith(".mca"))
@@ -80,7 +82,7 @@ public class Main {
                                             if (arr1[j] == arr2[j]) {
                                                 arr1[j] = (byte) 0;
                                             } else {
-                                                arr1[j] = (args[2].equalsIgnoreCase("from") ? arr1[j] : arr2[j]);
+                                                arr1[j] = (from ? arr1[j] : arr2[j]);
                                             }
                                         }
 
@@ -106,7 +108,7 @@ public class Main {
                                                 if (a1[j] == a2[j]) {
                                                     a1[j] = (byte) 0;
                                                 } else {
-                                                    a1[j] = (args[2].equalsIgnoreCase("from") ? a1[j] : a2[j]);
+                                                    a1[j] = (from ? a1[j] : a2[j]);
                                                 }
                                             }
                                             dataArrays1.set(l, a1);
@@ -122,7 +124,7 @@ public class Main {
                                     }
 
                                     //copy over new sections (if mode is "from")
-                                    if (sList2.getSize() > sList1.getSize() && !args[2].equalsIgnoreCase("from")) {
+                                    if (sList2.getSize() > sList1.getSize() && !from) {
                                         for (int i = 0; i < sList2.getSize(); ++i) {
                                             NbtCompound compound = sList2.get(i);
                                             Optional<NbtCompound> s1 = sList1.stream().filter(nbt -> nbt.getByte("Y") == compound.getByte("Y")).findAny();
@@ -130,6 +132,11 @@ public class Main {
                                                 sList1.add(compound);
                                             }
                                         }
+                                    }
+
+                                    if (!from) {
+                                        c1.getLevel().set("TileEntities", c2.getLevel().getCompoundList("TileEntities"));
+                                        c1.getLevel().set("Entities", c2.getLevel().getCompoundList("Entities"));
                                     }
 
                                     System.out.println("saving chunk " + cPos + " in region");
