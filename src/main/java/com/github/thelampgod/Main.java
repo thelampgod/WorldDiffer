@@ -22,12 +22,17 @@ public class Main {
             System.exit(1);
         }
 
+        File out = new File(args[3]);
+
+        HashSet<String> existingRegions = new HashSet<>(Arrays.asList(Objects.requireNonNull(out.list())));
+
         boolean from = args[2].equalsIgnoreCase("from");
 
         try (Stream<Path> fileStream = Files.list(Paths.get(args[0]))) {
             fileStream.parallel()
                     .filter(file -> file.getFileName().toString().endsWith(".mca"))
                     .map(Path::toFile)
+                    .filter(file -> !existingRegions.contains(file.getName()))
                     .forEach(file -> {
                         try {
                             Region r2;
