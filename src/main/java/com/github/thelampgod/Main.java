@@ -30,8 +30,6 @@ public class Main {
                     .map(Path::toFile)
                     .forEach(file -> {
                         try {
-                            System.out.println("reading regions");
-                            Region r1 = RegionIO.readRegion(file);
                             Region r2;
                             try {
                                 r2 = RegionIO.readRegion(new File(String.format("%s/%s", args[1], file.getName())));
@@ -40,6 +38,11 @@ public class Main {
                                 System.out.println("region no exist");
                                 return;
                             }
+
+                            System.out.println("reading regions");
+                            Region r1 = RegionIO.readRegion(file);
+
+
 
                             RegionPos rPos = r1.getPosition();
 
