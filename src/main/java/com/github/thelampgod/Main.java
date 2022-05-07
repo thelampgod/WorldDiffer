@@ -22,13 +22,18 @@ public class Main {
             System.exit(1);
         }
 
-        File out = new File(args[3]);
+        String output = "./out/";
 
-        HashSet<String> existingRegions = new HashSet<>(Arrays.asList(Objects.requireNonNull(out.list())));
+        if (args.length == 4) {
+            output = args[3];
+        }
+
+        HashSet<String> existingRegions = new HashSet<>(Arrays.asList(Objects.requireNonNull(new File(output).list())));
 
         boolean from = args[2].equalsIgnoreCase("from");
 
         try (Stream<Path> fileStream = Files.list(Paths.get(args[0]))) {
+            String finalOutput = output;
             fileStream.parallel()
                     .filter(file -> file.getFileName().toString().endsWith(".mca"))
                     .map(Path::toFile)
@@ -43,12 +48,7 @@ public class Main {
                                 System.out.println("region no exist");
                                 return;
                             }
-
-                            System.out.println("reading regions");
                             Region r1 = RegionIO.readRegion(file);
-
-
-
                             RegionPos rPos = r1.getPosition();
 
                             for (int x = 0; x < 32; ++x) {
@@ -60,6 +60,7 @@ public class Main {
 
                                     //if chunk doesnt exist in region
                                     if (c1 == null || c2 == null) {
+                                        r1.remove(cPos);
                                         continue;
                                     }
 
@@ -77,25 +78,13 @@ public class Main {
                                             sectionsToRemove.add(Y);
                                             continue;
                                         }
-
                                         NbtCompound s2 = s2Optional.get();
-
 
                                         byte[] arr1 = s1.getByteArray("Blocks");
                                         byte[] arr2 = s2.getByteArray("Blocks");
+                                        byte[] blockArray = compareArray(arr1, arr2, arr1.length, from);
 
-
-                                        for (int j = 0; j < arr1.length; ++j) {
-                                            //TODO: also other way round (only save blocks where nothing changed)
-                                            if (arr1[j] == arr2[j]) {
-                                                arr1[j] = (byte) 0;
-                                            } else {
-                                                arr1[j] = (from ? arr1[j] : arr2[j]);
-                                            }
-                                        }
-
-                                        s1.set("Blocks", new NbtByteArray(arr1));
-                                        arr1 = null;
+                                        s1.set("Blocks", new NbtByteArray(blockArray));
 
                                         List<byte[]> dataArrays1 = Arrays.asList(
                                                 s1.getByteArray("BlockLight"),
@@ -111,15 +100,10 @@ public class Main {
                                         for (int l = 0; l < 3; ++l) {
                                             byte[] a1 = dataArrays1.get(l);
                                             byte[] a2 = dataArrays2.get(l);
-                                            for (int j = 0; j < 2048; ++j) {
 
-                                                if (a1[j] == a2[j]) {
-                                                    a1[j] = (byte) 0;
-                                                } else {
-                                                    a1[j] = (from ? a1[j] : a2[j]);
-                                                }
-                                            }
-                                            dataArrays1.set(l, a1);
+                                            byte[] result = compareArray(a1, a2, a1.length, from);
+
+                                            dataArrays1.set(l, result);
                                         }
 
                                         s1.set("BlockLight", new NbtByteArray(dataArrays1.get(0)));
@@ -142,6 +126,13 @@ public class Main {
                                         }
                                     }
 
+                                    byte[] biomes1 = c1.getLevel().getByteArray("Biomes");
+                                    byte[] biomes2 = c2.getLevel().getByteArray("Biomes");
+
+                                    byte[] biomeArray = compareArray(biomes1, biomes2, biomes1.length, from);
+
+                                    c1.getLevel().set("Biomes", new NbtByteArray(biomeArray));
+
                                     if (!from) {
                                         c1.getLevel().set("TileEntities", c2.getLevel().getCompoundList("TileEntities"));
                                         c1.getLevel().set("Entities", c2.getLevel().getCompoundList("Entities"));
@@ -152,18 +143,26 @@ public class Main {
                                 }
                             }
 
-                            String output = "./out/";
-
-                            if (args.length == 4) {
-                                output = args[3];
-                            }
-
-                            RegionIO.writeRegion(new File(String.format(output + "/r.%d.%d.mca", rPos.getXPos(), rPos.getZPos())), r1);
+                            RegionIO.writeRegion(new File(String.format(finalOutput + "/r.%d.%d.mca", rPos.getXPos(), rPos.getZPos())), r1);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                     });
 
         }
+    }
+
+    private static byte[] compareArray(byte[] arr1, byte[] arr2, int size, boolean from) {
+        //TODO: also other way round (only save blocks where nothing changed)
+        byte[] temp = new byte[size];
+
+        for (int i = 0; i < size; ++i) {
+            if (arr1[i] == arr2[i]) {
+                temp[i] = (byte) 0;
+            } else {
+                temp[i] = (from ? arr1[i] : arr2[i]);
+            }
+        }
+        return temp;
     }
 }
