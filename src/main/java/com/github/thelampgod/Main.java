@@ -82,7 +82,7 @@ public class Main {
 
                                         byte[] arr1 = s1.getByteArray("Blocks");
                                         byte[] arr2 = s2.getByteArray("Blocks");
-                                        byte[] blockArray = compareArray(arr1, arr2, arr1.length, from);
+                                        byte[] blockArray = compareArray(arr1, arr2, arr1.length, from, (byte) 0);
 
                                         s1.set("Blocks", new NbtByteArray(blockArray));
 
@@ -101,7 +101,7 @@ public class Main {
                                             byte[] a1 = dataArrays1.get(l);
                                             byte[] a2 = dataArrays2.get(l);
 
-                                            byte[] result = compareArray(a1, a2, a1.length, from);
+                                            byte[] result = compareArray(a1, a2, a1.length, from, (byte) 0);
 
                                             dataArrays1.set(l, result);
                                         }
@@ -129,7 +129,7 @@ public class Main {
                                     byte[] biomes1 = c1.getLevel().getByteArray("Biomes");
                                     byte[] biomes2 = c2.getLevel().getByteArray("Biomes");
 
-                                    byte[] biomeArray = compareArray(biomes1, biomes2, biomes1.length, from);
+                                    byte[] biomeArray = compareArray(biomes1, biomes2, biomes1.length, from, (byte) 127); //127 == void
 
                                     c1.getLevel().set("Biomes", new NbtByteArray(biomeArray));
 
@@ -152,13 +152,13 @@ public class Main {
         }
     }
 
-    private static byte[] compareArray(byte[] arr1, byte[] arr2, int size, boolean from) {
+    private static byte[] compareArray(byte[] arr1, byte[] arr2, int size, boolean from, byte emptyByte) {
         //TODO: also other way round (only save blocks where nothing changed)
         byte[] temp = new byte[size];
 
         for (int i = 0; i < size; ++i) {
             if (arr1[i] == arr2[i]) {
-                temp[i] = (byte) 0;
+                temp[i] = emptyByte;
             } else {
                 temp[i] = (from ? arr1[i] : arr2[i]);
             }
