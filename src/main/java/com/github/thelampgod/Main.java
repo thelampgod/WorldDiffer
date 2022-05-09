@@ -82,9 +82,19 @@ public class Main {
 
                                         byte[] arr1 = s1.getByteArray("Blocks");
                                         byte[] arr2 = s2.getByteArray("Blocks");
-                                        byte[] blockArray = compareArray(arr1, arr2, arr1.length, from, (byte) 0);
 
-                                        s1.set("Blocks", new NbtByteArray(blockArray));
+                                        for (int j = 0; j < arr1.length; ++j) {
+                                            if (arr1[j] == arr2[j]) {
+                                                arr1[j] = 0;
+                                            } else if ((arr1[j] == (byte) 10 && arr2[j] == (byte) 11)  // flowing and still lava
+                                                    || (arr1[j] == (byte) 11 && arr2[j] == (byte) 10)) {
+                                                arr1[j] = 0;
+                                            } else {
+                                                arr1[j] = (from ? arr1[j] : arr2[j]);
+                                            }
+                                        }
+
+                                        s1.set("Blocks", new NbtByteArray(arr1));
 
                                         List<byte[]> dataArrays1 = Arrays.asList(
                                                 s1.getByteArray("BlockLight"),
