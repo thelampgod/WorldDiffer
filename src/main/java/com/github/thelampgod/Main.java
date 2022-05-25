@@ -16,9 +16,15 @@ import java.util.stream.Stream;
 
 public class Main {
 
+    private enum Mode {
+        FROM,
+        INTO,
+        DESTRUCTION
+    };
+
     public static void main(String[] args) throws IOException {
         if (args.length < 3) {
-            System.err.println("usage: <world1> <world2> <from/into> <output>");
+            System.err.println("usage: <world1> <world2> <from/into/destruction> <output>");
             System.exit(1);
         }
 
@@ -30,7 +36,7 @@ public class Main {
 
         HashSet<String> existingRegions = new HashSet<>(Arrays.asList(Objects.requireNonNull(new File(output).list())));
 
-        boolean from = args[2].equalsIgnoreCase("from");
+        Mode mode = parseMode(args[2].toLowerCase());
 
         try (Stream<Path> fileStream = Files.list(Paths.get(args[0]))) {
             String finalOutput = output;
@@ -54,7 +60,6 @@ public class Main {
                             for (int x = 0; x < 32; ++x) {
                                 for (int z = 0; z < 32; ++z) {
                                     ChunkPos cPos = new ChunkPos((rPos.getXPos() << 5) + x, (rPos.getZPos() << 5) + z);
-                                    System.out.println(rPos + " " + cPos);
                                     Chunk c1 = r1.get(cPos);
                                     Chunk c2 = r2.get(cPos);
 
@@ -83,18 +88,9 @@ public class Main {
                                         byte[] arr1 = s1.getByteArray("Blocks");
                                         byte[] arr2 = s2.getByteArray("Blocks");
 
-                                        for (int j = 0; j < arr1.length; ++j) {
-                                            if (arr1[j] == arr2[j]) {
-                                                arr1[j] = 0;
-                                            } else if ((arr1[j] == (byte) 10 && arr2[j] == (byte) 11)  // flowing and still lava
-                                                    || (arr1[j] == (byte) 11 && arr2[j] == (byte) 10)) {
-                                                arr1[j] = 0;
-                                            } else {
-                                                arr1[j] = (from ? arr1[j] : arr2[j]);
-                                            }
-                                        }
+                                        byte[] blockArray = compareArray(arr1, arr2, arr1.length, mode, (byte) 0);
 
-                                        s1.set("Blocks", new NbtByteArray(arr1));
+                                        s1.set("Blocks", new NbtByteArray(blockArray));
 
                                         List<byte[]> dataArrays1 = Arrays.asList(
                                                 s1.getByteArray("BlockLight"),
@@ -111,7 +107,7 @@ public class Main {
                                             byte[] a1 = dataArrays1.get(l);
                                             byte[] a2 = dataArrays2.get(l);
 
-                                            byte[] result = compareArray(a1, a2, a1.length, from, (byte) 0);
+                                            byte[] result = compareArray(a1, a2, a1.length, mode, (byte) 0);
 
                                             dataArrays1.set(l, result);
                                         }
@@ -125,8 +121,8 @@ public class Main {
                                         sList1.removeIf(nbt -> nbt.getByte("Y") == b);
                                     }
 
-                                    //copy over new sections (if mode is "from")
-                                    if (sList2.getSize() > sList1.getSize() && !from) {
+                                    //copy over new sections (if mode is "into")
+                                    if (sList2.getSize() > sList1.getSize() && mode == Mode.INTO) {
                                         for (int i = 0; i < sList2.getSize(); ++i) {
                                             NbtCompound compound = sList2.get(i);
                                             Optional<NbtCompound> s1 = sList1.stream().filter(nbt -> nbt.getByte("Y") == compound.getByte("Y")).findAny();
@@ -139,16 +135,15 @@ public class Main {
                                     byte[] biomes1 = c1.getLevel().getByteArray("Biomes");
                                     byte[] biomes2 = c2.getLevel().getByteArray("Biomes");
 
-                                    byte[] biomeArray = compareArray(biomes1, biomes2, biomes1.length, from, (byte) 127); //127 == void
+                                    byte[] biomeArray = compareArray(biomes1, biomes2, biomes1.length, mode, (byte) 127); //127 == void
 
                                     c1.getLevel().set("Biomes", new NbtByteArray(biomeArray));
 
-                                    if (!from) {
+                                    if (mode == Mode.INTO) {
                                         c1.getLevel().set("TileEntities", c2.getLevel().getCompoundList("TileEntities"));
                                         c1.getLevel().set("Entities", c2.getLevel().getCompoundList("Entities"));
                                     }
 
-                                    System.out.println("saving chunk " + cPos + " in region");
                                     r1.put(cPos, c1);
                                 }
                             }
@@ -162,15 +157,37 @@ public class Main {
         }
     }
 
-    private static byte[] compareArray(byte[] arr1, byte[] arr2, int size, boolean from, byte emptyByte) {
+    private static Mode parseMode(String arg) {
+        Mode temp = Mode.FROM;
+
+        if (arg.startsWith("into")) {
+            temp = Mode.INTO;
+        } else if (arg.startsWith("destruction")) {
+            temp = Mode.DESTRUCTION;
+        }
+
+        return temp;
+    }
+
+    private static byte[] compareArray(byte[] arr1, byte[] arr2, int size, Mode mode, byte emptyByte) {
         //TODO: also other way round (only save blocks where nothing changed)
         byte[] temp = new byte[size];
 
-        for (int i = 0; i < size; ++i) {
-            if (arr1[i] == arr2[i]) {
-                temp[i] = emptyByte;
-            } else {
-                temp[i] = (from ? arr1[i] : arr2[i]);
+        if (mode == Mode.DESTRUCTION) {
+            for (int i = 0; i < size; ++i) {
+                if (arr1[i] != arr2[i]) {
+                    temp[i] = emptyByte;
+                } else {
+                    temp[i] = arr1[i];
+                }
+            }
+        } else {
+            for (int i = 0; i < size; ++i) {
+                if (arr1[i] == arr2[i]) {
+                    temp[i] = emptyByte;
+                } else {
+                    temp[i] = (mode == Mode.FROM ? arr1[i] : arr2[i]);
+                }
             }
         }
         return temp;
