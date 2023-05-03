@@ -34,6 +34,6 @@ jar {
     manifest {
         attributes "Implementation-Title": "thelampgod",
                 "Implementation-Version": "1.1",
-                "Main-Class": "com.github.thelampgod.Main"
+                "Main-Class": "com.github.thelampgod.WolfDeleter"
     }
 }
