@@ -1,2 +1,3 @@
-rootProject.name = 'WorldDiffer'
+rootProject.name = 'WorldRemapper'
+include 'region-manip'
 

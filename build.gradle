@@ -15,7 +15,8 @@ configurations {
 }
 
 dependencies {
-    shade 'br.com.gamemods:region-manipulator:2.0.0'
+    shade project(":region-manip")
+//    shade 'br.com.gamemods:region-manipulator:2.0.0'
 }
 
 
@@ -33,7 +34,7 @@ jar {
 
     manifest {
         attributes "Implementation-Title": "thelampgod",
-                "Implementation-Version": "1.1",
-                "Main-Class": "com.github.thelampgod.Main"
+                "Implementation-Version": "1.0",
+                "Main-Class": "com.github.thelampgod.RemapWorld"
     }
 }
