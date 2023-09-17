@@ -159,6 +159,13 @@ public class RemapWorld {
             System.out.printf("Remapping %s(%d,%d,%d) to %d,%d,%d\n", id, x, y, z, newX, y, newZ);
             entity.set("x", new NbtInt(newX));
             entity.set("z", new NbtInt(newZ));
+
+            if (id.equals("minecraft:beehive")) {
+                NbtCompound flowerPos = entity.getCompound("FlowerPos");
+                flowerPos.set("x", new NbtInt(0));
+                flowerPos.set("y", new NbtInt(0));
+                flowerPos.set("z", new NbtInt(0));
+            }
         });
     }
 }
