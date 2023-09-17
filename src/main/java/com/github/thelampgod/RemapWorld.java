@@ -7,8 +7,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 
 public class RemapWorld {
+
+    private static int remapX = 0;
+    private static int remapZ = 0;
 
     public static void main(String... args) {
         if (args.length < 3) {
@@ -18,8 +22,8 @@ public class RemapWorld {
         }
         //remap by
         final String inputFolder = args[0];
-        final int remapX = Integer.parseInt(args[1]);
-        final int remapZ = Integer.parseInt(args[2]);
+        remapX = Integer.parseInt(args[1]);
+        remapZ = Integer.parseInt(args[2]);
 
         System.out.println(inputFolder);
 
@@ -45,7 +49,7 @@ public class RemapWorld {
 
 
         Arrays.stream(regionFolder.listFiles())
-                //.parallel()
+                .parallel()
                 .filter(file -> file.getName().endsWith(".mca"))
                 .forEach(file -> {
                     Region region;
@@ -70,18 +74,11 @@ public class RemapWorld {
                         chunk.getCompound().set("zPos", newCPos.getZPos());
 
                         NbtList<NbtCompound> entities = chunk.getCompound().getCompoundList("block_entities");
-                        entities.forEach(entity -> {
-                            String id = entity.getString("id");
-                            int x = entity.getInt("x");
-                            int y = entity.getInt("y");
-                            int z = entity.getInt("z");
-
-                            int newX = x + (remapX * 512);
-                            int newZ = z + (remapX * 512);
-                            System.out.printf("Remapping %s(%d,%d,%d) to %d,%d,%d\n", id, x, y, z, newX, y, newZ);
-                            entity.set("x", new NbtInt(newX));
-                            entity.set("z", new NbtInt(newZ));
-                        });
+                        NbtList<NbtCompound> blockTicks = chunk.getCompound().getCompoundList("block_ticks");
+                        NbtList<NbtCompound> fluidTicks = chunk.getCompound().getCompoundList("fluid_ticks");
+                        remapList(entities);
+                        remapList(blockTicks);
+                        remapList(fluidTicks);
 
                     });
 
@@ -94,7 +91,7 @@ public class RemapWorld {
                 });
 
         Arrays.stream(entitiesFolder.listFiles())
-                //.parallel()
+                .parallel()
                 .filter(file -> file.getName().endsWith(".mca"))
                 .forEach(file -> {
                     Region region;
@@ -142,5 +139,26 @@ public class RemapWorld {
                 });
 
         System.out.println("Done! :)");
+    }
+
+    private static void remapList(NbtList<NbtCompound> list) {
+        list.forEach(entity -> {
+            String id;
+            try {
+                id = entity.getString("id");
+            } catch (NoSuchElementException e) {
+                //blockticks and fluidticks
+                id = entity.getString("i");
+            }
+            int x = entity.getInt("x");
+            int y = entity.getInt("y");
+            int z = entity.getInt("z");
+
+            int newX = x + (remapX * 512);
+            int newZ = z + (remapX * 512);
+            System.out.printf("Remapping %s(%d,%d,%d) to %d,%d,%d\n", id, x, y, z, newX, y, newZ);
+            entity.set("x", new NbtInt(newX));
+            entity.set("z", new NbtInt(newZ));
+        });
     }
 }
