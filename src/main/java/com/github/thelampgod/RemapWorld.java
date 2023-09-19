@@ -161,10 +161,14 @@ public class RemapWorld {
             entity.set("z", new NbtInt(newZ));
 
             if (id.equals("minecraft:beehive")) {
-                NbtCompound flowerPos = entity.getCompound("FlowerPos");
-                flowerPos.set("x", new NbtInt(0));
-                flowerPos.set("y", new NbtInt(0));
-                flowerPos.set("z", new NbtInt(0));
+                try {
+                    NbtCompound flowerPos = entity.getCompound("FlowerPos");
+                    flowerPos.set("x", new NbtInt(0));
+                    flowerPos.set("y", new NbtInt(0));
+                    flowerPos.set("z", new NbtInt(0));
+                } catch (NoSuchElementException ignored) {
+                    //nothing to do :)
+                }
             }
         });
     }
