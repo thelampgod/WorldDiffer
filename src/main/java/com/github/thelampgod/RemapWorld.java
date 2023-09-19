@@ -31,6 +31,11 @@ public class RemapWorld {
         File entitiesFolder = new File(inputFolder + "/entities/");
         File regionFolder = new File(inputFolder + "/region/");
 
+        if (!entitiesFolder.exists() || !regionFolder.exists()) {
+            System.err.println("regions folder or entities folder doesnt exist! is the input to the world folder?");
+            System.exit(1);
+        }
+
 
         File regionBackup = new File(regionFolder + "/backup/");
         if (!regionBackup.exists()) {
