@@ -160,7 +160,7 @@ public class RemapWorld {
             int z = entity.getInt("z");
 
             int newX = x + (remapX * 512);
-            int newZ = z + (remapX * 512);
+            int newZ = z + (remapZ * 512);
             System.out.printf("Remapping %s(%d,%d,%d) to %d,%d,%d\n", id, x, y, z, newX, y, newZ);
             entity.set("x", new NbtInt(newX));
             entity.set("z", new NbtInt(newZ));
