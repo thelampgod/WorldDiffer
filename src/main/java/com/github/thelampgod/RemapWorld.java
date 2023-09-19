@@ -128,7 +128,7 @@ public class RemapWorld {
                             double z = positions.get(2).getValue();
 
                             double newX = x + (remapX * 512);
-                            double newZ = z + (remapX * 512);
+                            double newZ = z + (remapZ * 512);
                             System.out.printf("Remapping %s(%.1f,%.1f,%.1f) to %.1f,%.1f,%.1f\n", id, x, y, z, newX, y, newZ);
                             entity.set("Pos", new NbtList<>(new NbtDouble(newX), new NbtDouble(y), new NbtDouble(newZ)));
                         });
