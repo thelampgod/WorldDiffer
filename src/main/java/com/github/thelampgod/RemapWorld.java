@@ -6,7 +6,9 @@ import br.com.gamemods.regionmanipulator.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 public class RemapWorld {
@@ -79,12 +81,20 @@ public class RemapWorld {
                         chunk.getCompound().set("zPos", newCPos.getZPos());
 
                         NbtList<NbtCompound> entities = chunk.getCompound().getCompoundList("block_entities");
-                        NbtList<NbtCompound> blockTicks = chunk.getCompound().getCompoundList("block_ticks");
-                        NbtList<NbtCompound> fluidTicks = chunk.getCompound().getCompoundList("fluid_ticks");
                         remapList(entities);
-                        remapList(blockTicks);
-                        remapList(fluidTicks);
 
+                        try {
+                            NbtList<NbtCompound> blockTicks = chunk.getCompound().getCompoundList("block_ticks");
+                            remapList(blockTicks);
+                        } catch (NoSuchElementException ignored) {
+                            //nothing to do :)
+                        }
+                        try {
+                            NbtList<NbtCompound> fluidTicks = chunk.getCompound().getCompoundList("fluid_ticks");
+                            remapList(fluidTicks);
+                        } catch (NoSuchElementException ignored) {
+                            //nothing to do :)
+                        }
                     });
 
                     try {
@@ -147,6 +157,7 @@ public class RemapWorld {
     }
 
     private static void remapList(NbtList<NbtCompound> list) {
+        List<NbtCompound> entitiesToRemove = new ArrayList<>();
         list.forEach(entity -> {
             String id;
             try {
@@ -155,6 +166,14 @@ public class RemapWorld {
                 //blockticks and fluidticks
                 id = entity.getString("i");
             }
+
+            if (id.equals("minecraft:banner")) {
+                if (!entity.containsKey("Patterns")) {
+                    entitiesToRemove.add(entity);
+                    return;
+                }
+            }
+
             int x = entity.getInt("x");
             int y = entity.getInt("y");
             int z = entity.getInt("z");
@@ -175,6 +194,9 @@ public class RemapWorld {
                     //nothing to do :)
                 }
             }
+
         });
+
+        entitiesToRemove.forEach(list::remove);
     }
 }
