@@ -95,6 +95,14 @@ public class RemapWorld {
                         } catch (NoSuchElementException ignored) {
                             //nothing to do :)
                         }
+
+                        NbtCompound biomes = new NbtCompound();
+                        NbtList<NbtString> palette = new NbtList<>();
+                        palette.add(new NbtString("minecraft:plains"));
+                        biomes.set("palette", palette);
+                        chunk.getCompound().getCompoundList("sections").forEach(section -> {
+                            section.set("biomes", biomes);
+                        });
                     });
 
                     try {

@@ -11,6 +11,8 @@ The following is remapped:
 
 Beehive block entities have their "FlowerPos" property set to 0,0,0.
 
+Biomes are set to plains.
+
 Please note that playerdata or items in containers is not remapped, so beehives or anything else with coordinates in its nbt that is still present in item form (only beehives for now I think) will still show their original coordinates.
 
 ## Usage
